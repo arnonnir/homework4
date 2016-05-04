@@ -28,37 +28,37 @@ public class MainHW4 {
 		instancesTraining.setClassIndex(instancesTraining.numAttributes() - 1);
 
 		Knn kNearestNeighbor = new Knn();
-		kNearestNeighbor.setM_MODE("");
+		kNearestNeighbor.setM_MODE("none");
 		kNearestNeighbor.buildClassifier(instancesTraining);
 
-		choseParameters(kNearestNeighbor, instancesTraining);
-		
-	
-		
-		
-	}
-
-	private static void choseParameters(Knn kNearestNeighbor, Instances trainingData) {
+		//choseParameters(kNearestNeighbor, instancesTraining);
 		int k_MaxValue = 1;
 		int p_MaxValue = 1;
 		int func_MaxValue = 1;
 		double minError = Integer.MAX_VALUE;
-		
-		for (int k = 1; k < 31; k++) {
-			   for (int p = 1; p < 5; p++) {
-				   for (int func = 1; func < 3; func++) {
-					   double currentParamsError = kNearestNeighbor.CrossValidationError(trainingData, k, p, func);
 
-					   if (currentParamsError < minError) {
-						   k_MaxValue = k;
-						   p_MaxValue = p;
-						   func_MaxValue = func;
-						   minError = currentParamsError;
-					   }
-				   }   
-			   }
+		for (int k = 1; k < 31; k++) {
+			for (int p = 1; p < 5; p++) {
+				for (int func = 1; func < 3; func++) {
+					double currentParamsError = kNearestNeighbor.CrossValidationError(instancesTraining, k, p, func);
+
+					if (currentParamsError < minError) {
+						k_MaxValue = k;
+						p_MaxValue = p;
+						func_MaxValue = func;
+						minError = currentParamsError;
+					}
+				}
+			}
 		}
+
+		System.out.println("Error: " + kNearestNeighbor.calcAvgError(instancesTraining, instancesTraining, k_MaxValue, p_MaxValue, func_MaxValue));
+		System.out.println("K value: " + k_MaxValue);
+		System.out.println("p value: " + p_MaxValue);
+		System.out.println("func value: " + func_MaxValue);
+		
 		
 	}
+
 
 }

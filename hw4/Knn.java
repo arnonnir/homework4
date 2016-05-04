@@ -6,6 +6,7 @@ import weka.core.Instances;
 
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Random;
 
 
 public class Knn extends Classifier {
@@ -42,7 +43,8 @@ public class Knn extends Classifier {
 
     // add random shuffle
     public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
-
+     //   Random random = new Random();
+      //  trainingData.randomize(random);
         double crossValidationError = 0;
 
         for (int n = 0; n < NUM_FOLDS; n++) {
@@ -58,7 +60,7 @@ public class Knn extends Classifier {
         return crossValidationError;
     }
 
-    private double calcAvgError(Instances testingData, Instances trainingData, int numOfNeighbors, int pDistance, int func) {
+    public double calcAvgError(Instances testingData, Instances trainingData, int numOfNeighbors, int pDistance, int func) {
         int numOfFoldInstances = testingData.numInstances();
         double totalFoldError = 0;
 
@@ -174,7 +176,7 @@ public class Knn extends Classifier {
 
         return majorityClassValueIndex;
     }
-    
+
     private void editedForward(Instances instances) {
     }
 
