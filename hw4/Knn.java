@@ -4,8 +4,7 @@ import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
-import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.ArrayList;
 import java.util.Random;
 
 
@@ -69,46 +68,46 @@ public class Knn extends Classifier {
             totalFoldError += (predictedValue != testingData.instance(i).classValue()) ? 1 : 0;
         }
 
-        double avgFoldError = totalFoldError / (double) numOfFoldInstances;
+        double avgFoldError = totalFoldError / (double)numOfFoldInstances;
 
         return avgFoldError;
     }
 
     private double classify(Instances trainingSet, Instance instance, int numOfNeighbors, int pDistance, int func) {
-        HashMap<Instance, Double> nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
+        ArrayList<Pair> nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
         double classVote = (func == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
 
         return classVote;
     }
 
 
-    private HashMap<Instance, Double> findNearestNeighbors(Instances trainingData, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
-        HashMap<Instance, Double> allNeighbors = new HashMap<Instance, Double>();
-        HashMap<Instance, Double> nearestNeighbors = new HashMap<Instance, Double>();
+    private ArrayList<Pair> findNearestNeighbors(Instances trainingData, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
+        ArrayList<Pair> allNeighbors = new ArrayList<Pair>();
+        ArrayList<Pair> nearestNeighbors = new ArrayList<Pair>();
         int numOfInstances = trainingData.numInstances();
 
         for (int i = 0; i < numOfInstances; i++) {
             Instance currentInstance = trainingData.instance(i);
             double currentDistance = distance(currentInstance, instanceToCheck, pDistance);
 
-            allNeighbors.put(currentInstance, currentDistance);
+            allNeighbors.add(new Pair(currentInstance, currentDistance));
         }
 
         for (int i = 0; i < numOfNeighbors; i++) {
-            Entry<Instance, Double> lowestNeighbor = getLowestDistanceNeighbor(allNeighbors);
-            nearestNeighbors.put(lowestNeighbor.getKey(), lowestNeighbor.getValue());
-            allNeighbors.remove(lowestNeighbor.getKey());
+            Pair lowestNeighbor = getLowestDistanceNeighbor(allNeighbors);
+            nearestNeighbors.add(new Pair(lowestNeighbor.instance, lowestNeighbor.distance));
+            allNeighbors.remove(lowestNeighbor);
         }
 
         return nearestNeighbors;
     }
 
-    private Entry<Instance, Double> getLowestDistanceNeighbor(HashMap<Instance, Double> nearestNeighbors) {
-        Entry<Instance, Double> lowestNeighbor = nearestNeighbors.entrySet().iterator().next();
+    private Pair getLowestDistanceNeighbor(ArrayList<Pair> nearestNeighbors) {
+        Pair lowestNeighbor = nearestNeighbors.get(0);
 
-        for (Entry<Instance, Double> neighbor : nearestNeighbors.entrySet()) {
+        for (Pair neighbor : nearestNeighbors) {
 
-            if (neighbor.getValue() < lowestNeighbor.getValue()) {
+            if (neighbor.distance < lowestNeighbor.distance) {
                 lowestNeighbor = neighbor;
             }
         }
@@ -120,9 +119,9 @@ public class Knn extends Classifier {
         double distance = 0;
 
         if (pDistance == 4) {
-            lInfinityDistance(instance1, instance2);
+            distance = lInfinityDistance(instance1, instance2);
         } else {
-            lPDistance(instance1, instance2, pDistance);
+            distance = lPDistance(instance1, instance2, pDistance);
         }
 
         return distance;
@@ -152,22 +151,22 @@ public class Knn extends Classifier {
         return maxSubstruction;
     }
 
-    private double getWeightedClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
+    private double getWeightedClassVoteResult(ArrayList<Pair> nearestNeighbors) {
         return calculateClassVoteResult(nearestNeighbors, 2);
     }
 
-    private double getClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
+    private double getClassVoteResult(ArrayList<Pair> nearestNeighbors) {
         return calculateClassVoteResult(nearestNeighbors, 1);
     }
 
-    private double calculateClassVoteResult(HashMap<Instance, Double> nearestNeighbors, int func) {
+    private double calculateClassVoteResult(ArrayList<Pair> nearestNeighbors, int func) {
         int numOfClassValues = m_trainingInstances.numClasses();
         double[] countMajority = new double[numOfClassValues];
         double majorityClassValueIndex = 0;
 
-        for (Entry<Instance, Double> neighbor : nearestNeighbors.entrySet()) {
-            int classValue = (int)neighbor.getKey().classValue();
-            countMajority[classValue] += (func == 1) ? 1 : 1.0 / Math.pow(neighbor.getValue(), 2);
+        for (Pair neighbor : nearestNeighbors) {
+            int classValue = (int)neighbor.instance.classValue();
+            countMajority[classValue] += (func == 1) ? 1 : 1.0 / Math.pow(neighbor.distance, 2);
 
             if(countMajority[classValue] > majorityClassValueIndex) {
                 majorityClassValueIndex = classValue;

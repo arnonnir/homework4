@@ -35,7 +35,7 @@ public class MainHW4 {
 		int k_MaxValue = 1;
 		int p_MaxValue = 1;
 		int func_MaxValue = 1;
-		double minError = Integer.MAX_VALUE;
+		double minError = Double.MAX_VALUE;
 
 		for (int k = 1; k < 31; k++) {
 			for (int p = 1; p < 5; p++) {
