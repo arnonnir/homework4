@@ -151,18 +151,21 @@ public class Knn extends Classifier {
     }
 
     private double getWeightedClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
-        // TODO Auto-generated method stub
-        return 0;
+        return calculateClassVoteResult(nearestNeighbors, 2);
     }
 
     private double getClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
+        return calculateClassVoteResult(nearestNeighbors, 1);
+    }
+
+    private double calculateClassVoteResult(HashMap<Instance, Double> nearestNeighbors, int func) {
         int numOfClassValues = m_trainingInstances.numClasses();
-        int[] countMajority = new int[numOfClassValues];
+        double[] countMajority = new double[numOfClassValues];
         double majorityClassValueIndex = 0;
 
         for (Entry<Instance, Double> neighbor : nearestNeighbors.entrySet()) {
             int classValue = (int)neighbor.getKey().classValue();
-            countMajority[classValue]++;
+            countMajority[classValue] += (func == 1) ? 1 : 1.0 / Math.pow(neighbor.getValue(), 2);
 
             if(countMajority[classValue] > majorityClassValueIndex) {
                 majorityClassValueIndex = classValue;
@@ -171,9 +174,7 @@ public class Knn extends Classifier {
 
         return majorityClassValueIndex;
     }
-
-
-
+    
     private void editedForward(Instances instances) {
     }
 
