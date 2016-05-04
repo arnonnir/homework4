@@ -7,82 +7,141 @@ import weka.core.Instances;
 
 public class Knn extends Classifier {
 
-	private final static int NUM_FOLDS = 10; 
-	private String M_MODE = "";
-	Instances m_trainingInstances;
+    private final static int NUM_FOLDS = 10;
+    private String M_MODE = "";
+    Instances m_trainingInstances;
 
-	public String getM_MODE() {
-		return M_MODE;
-	}
+    public String getM_MODE() {
+        return M_MODE;
+    }
 
-	public void setM_MODE(String m_MODE) {
-		M_MODE = m_MODE;
-	}
+    public void setM_MODE(String m_MODE) {
+        M_MODE = m_MODE;
+    }
 
-	@Override
-	public void buildClassifier(Instances arg0) throws Exception {
-		switch (M_MODE){
-		case "none":
-			noEdit(arg0);
-			break;
-		case "forward":
-			editedForward(arg0);
-			break;
-		case "backward":
-			editedBackward(arg0);
-			break;
-		default:
-			noEdit(arg0);
-			break;
-		}
-	}
-	
-	public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
-		
-		double crossValidationError = 0;
-		
-		for (int n = 0; n < NUM_FOLDS; n++) {
-			   Instances trainingSet = trainingData.trainCV(NUM_FOLDS, n);
-			   Instances testingSet = trainingData.testCV(NUM_FOLDS, n);
-			   double specificFoldError = 0;
-			   
-			   int numOfFoldInstances = testingSet.numInstances();
-			   for (int i = 0; i < numOfFoldInstances; i++) {
-				   double[] nearestNeighbors = findNearestNeighbors(trainingSet, trainingData.instance(i), numOfNeighbors, pDistance);		
-				   double classVote = (func == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
-				   specificFoldError += (classVote != testingSet.instance(i).classValue()) ? 1 : 0;
-			   }
-			   
-			   specificFoldError /= (double)numOfFoldInstances;
-			   crossValidationError += specificFoldError;
-		}
-					   
-		return crossValidationError /= (double)NUM_FOLDS;
-	}
-	
-	private double getWeightedClassVoteResult(double[] nearestNeighbors) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
 
-	private double getClassVoteResult(double[] nearestNeighbors) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
+    public void buildClassifier(Instances instances) throws Exception {
+        switch (M_MODE) {
+            case "none":
+                noEdit(instances);
+                break;
+            case "forward":
+                editedForward(instances);
+                break;
+            case "backward":
+                editedBackward(instances);
+                break;
+            default:
+                noEdit(instances);
+                break;
+        }
+    }
 
-	private double[] findNearestNeighbors(Instances allNeighbors, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
 
-	private void editedForward(Instances instances) {
-	}
-	
-	private void editedBackward(Instances instances) {
-	}
-	
-	private void noEdit(Instances instances) {
-		m_trainingInstances = new Instances(instances);
-	}
+        double crossValidationError = 0;
+
+        for (int n = 0; n < NUM_FOLDS; n++) {
+            Instances testingSet = trainingData.testCV(NUM_FOLDS, n);
+            Instances trainingSet = trainingData.trainCV(NUM_FOLDS, n);
+            double specificFoldError = calcAvgError(testingSet, trainingSet, numOfNeighbors, pDistance, func);
+
+            crossValidationError += specificFoldError;
+        }
+
+        crossValidationError /= (double) NUM_FOLDS;
+
+        return crossValidationError;
+    }
+
+    private double calcAvgError(Instances testingData, Instances trainingData, int numOfNeighbors, int pDistance, int func) {
+        int numOfFoldInstances = testingData.numInstances();
+        double totalFoldError = 0;
+
+        for (int i = 0; i < numOfFoldInstances; i++) {
+            double predictedValue = classify(trainingData, testingData.instance(i), numOfNeighbors, pDistance, func);
+            totalFoldError += (predictedValue != testingData.instance(i).classValue()) ? 1 : 0;
+        }
+
+        double avgFoldError = totalFoldError / (double) numOfFoldInstances;
+
+        return avgFoldError;
+    }
+
+    private double classify(Instances trainingSet, Instance instance, int numOfNeighbors, int pDistance, int func) {
+        double[] nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
+        double classVote = (func == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
+
+        return classVote;
+    }
+
+
+
+
+
+
+
+
+
+    private double getWeightedClassVoteResult(double[] nearestNeighbors) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private double getClassVoteResult(double[] nearestNeighbors) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private double[] findNearestNeighbors(Instances allNeighbors, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    private double distance(Instance instance1, Instance instance2, int pDistance) {
+        double distance = 0;
+
+        if(pDistance == 4) {
+            lInfinityDistance(instance1, instance2);
+        }else {
+            lPDistance(instance1, instance2, pDistance);
+        }
+
+        return distance;
+    }
+
+    private double lPDistance(Instance instance1, Instance instance2, int pDistance) {
+        int numOfFeatures = instance1.numAttributes() - 1;
+        double sumOfSubstraction = 0;
+
+        for(int i = 0; i < numOfFeatures; i++) {
+            double absoluteSubstract = Math.abs(instance1.value(i) - instance2.value(i));
+            sumOfSubstraction += Math.pow(absoluteSubstract, pDistance);
+        }
+
+        return Math.pow(sumOfSubstraction, (1.0 / (double)pDistance));
+    }
+
+    private double lInfinityDistance(Instance instance1, Instance instance2) {
+        int numOfFeatures = instance1.numAttributes() - 1;
+        double maxSubstruction = 0;
+
+        for(int i = 0; i < numOfFeatures; i++) {
+            double absoluteSubstract = Math.abs(instance1.value(i) - instance2.value(i));
+            maxSubstruction = Math.max(absoluteSubstract, maxSubstruction);
+        }
+
+        return maxSubstruction;
+    }
+
+    private void editedForward(Instances instances) {
+    }
+
+    private void editedBackward(Instances instances) {
+    }
+
+    private void noEdit(Instances instances) {
+        m_trainingInstances = new Instances(instances);
+    }
 
 }

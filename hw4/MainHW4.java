@@ -22,10 +22,15 @@ public class MainHW4 {
 	}
 	
 	public static void main (String [] args) throws Exception{
-		BufferedReader readTraining = readDataFile("/Users/yakirjonasoff/Documents/workspace/HomeWork4/src/hw4/glass.txt");
+		System.out.println(1/3);
+		BufferedReader readTraining = readDataFile("/Users/arnonnir/IdeaProjects/HomeWork4/src/hw4/glass.txt");
 		Instances instancesTraining = new Instances(readTraining);
 		instancesTraining.setClassIndex(instancesTraining.numAttributes() - 1);
+
 		Knn kNearestNeighbor = new Knn();
+		kNearestNeighbor.setM_MODE("");
+		kNearestNeighbor.buildClassifier(instancesTraining);
+
 		choseParameters(kNearestNeighbor, instancesTraining);
 		
 	
@@ -34,7 +39,6 @@ public class MainHW4 {
 	}
 
 	private static void choseParameters(Knn kNearestNeighbor, Instances trainingData) {
-		
 		int k_MaxValue = 1;
 		int p_MaxValue = 1;
 		int func_MaxValue = 1;
@@ -44,6 +48,7 @@ public class MainHW4 {
 			   for (int p = 1; p < 4; p++) {
 				   for (int func = 1; func < 3; func++) {
 					   double currentParamsError = kNearestNeighbor.CrossValidationError(trainingData, k, p, func);
+
 					   if (currentParamsError < minError) {
 						   k_MaxValue = k;
 						   p_MaxValue = p;
