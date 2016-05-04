@@ -4,6 +4,9 @@ import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
 
+import java.util.HashMap;
+import java.util.Map.Entry;
+
 
 public class Knn extends Classifier {
 
@@ -37,6 +40,7 @@ public class Knn extends Classifier {
         }
     }
 
+    // add random shuffle
     public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
 
         double crossValidationError = 0;
@@ -69,41 +73,53 @@ public class Knn extends Classifier {
     }
 
     private double classify(Instances trainingSet, Instance instance, int numOfNeighbors, int pDistance, int func) {
-        double[] nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
+        HashMap<Instance, Double> nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
         double classVote = (func == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
 
         return classVote;
     }
 
 
+    private HashMap<Instance, Double> findNearestNeighbors(Instances trainingData, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
+        HashMap<Instance, Double> allNeighbors = new HashMap<Instance, Double>();
+        HashMap<Instance, Double> nearestNeighbors = new HashMap<Instance, Double>();
+        int numOfInstances = trainingData.numInstances();
 
+        for (int i = 0; i < numOfInstances; i++) {
+            Instance currentInstance = trainingData.instance(i);
+            double currentDistance = distance(currentInstance, instanceToCheck, pDistance);
 
+            allNeighbors.put(currentInstance, currentDistance);
+        }
 
+        for (int i = 0; i < numOfNeighbors; i++) {
+            Entry<Instance, Double> lowestNeighbor = getLowestDistanceNeighbor(allNeighbors);
+            nearestNeighbors.put(lowestNeighbor.getKey(), lowestNeighbor.getValue());
+            allNeighbors.remove(lowestNeighbor.getKey());
+        }
 
-
-
-
-    private double getWeightedClassVoteResult(double[] nearestNeighbors) {
-        // TODO Auto-generated method stub
-        return 0;
+        return nearestNeighbors;
     }
 
-    private double getClassVoteResult(double[] nearestNeighbors) {
-        // TODO Auto-generated method stub
-        return 0;
-    }
+    private Entry<Instance, Double> getLowestDistanceNeighbor(HashMap<Instance, Double> nearestNeighbors) {
+        Entry<Instance, Double> lowestNeighbor = nearestNeighbors.entrySet().iterator().next();
 
-    private double[] findNearestNeighbors(Instances allNeighbors, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
-        // TODO Auto-generated method stub
-        return null;
+        for (Entry<Instance, Double> neighbor : nearestNeighbors.entrySet()) {
+
+            if (neighbor.getValue() < lowestNeighbor.getValue()) {
+                lowestNeighbor = neighbor;
+            }
+        }
+
+        return lowestNeighbor;
     }
 
     private double distance(Instance instance1, Instance instance2, int pDistance) {
         double distance = 0;
 
-        if(pDistance == 4) {
+        if (pDistance == 4) {
             lInfinityDistance(instance1, instance2);
-        }else {
+        } else {
             lPDistance(instance1, instance2, pDistance);
         }
 
@@ -114,25 +130,49 @@ public class Knn extends Classifier {
         int numOfFeatures = instance1.numAttributes() - 1;
         double sumOfSubstraction = 0;
 
-        for(int i = 0; i < numOfFeatures; i++) {
+        for (int i = 0; i < numOfFeatures; i++) {
             double absoluteSubstract = Math.abs(instance1.value(i) - instance2.value(i));
             sumOfSubstraction += Math.pow(absoluteSubstract, pDistance);
         }
 
-        return Math.pow(sumOfSubstraction, (1.0 / (double)pDistance));
+        return Math.pow(sumOfSubstraction, (1.0 / (double) pDistance));
     }
 
     private double lInfinityDistance(Instance instance1, Instance instance2) {
         int numOfFeatures = instance1.numAttributes() - 1;
         double maxSubstruction = 0;
 
-        for(int i = 0; i < numOfFeatures; i++) {
+        for (int i = 0; i < numOfFeatures; i++) {
             double absoluteSubstract = Math.abs(instance1.value(i) - instance2.value(i));
             maxSubstruction = Math.max(absoluteSubstract, maxSubstruction);
         }
 
         return maxSubstruction;
     }
+
+    private double getWeightedClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    private double getClassVoteResult(HashMap<Instance, Double> nearestNeighbors) {
+        int numOfClassValues = m_trainingInstances.numClasses();
+        int[] countMajority = new int[numOfClassValues];
+        double majorityClassValueIndex = 0;
+
+        for (Entry<Instance, Double> neighbor : nearestNeighbors.entrySet()) {
+            int classValue = (int)neighbor.getKey().classValue();
+            countMajority[classValue]++;
+
+            if(countMajority[classValue] > majorityClassValueIndex) {
+                majorityClassValueIndex = classValue;
+            }
+        }
+
+        return majorityClassValueIndex;
+    }
+
+
 
     private void editedForward(Instances instances) {
     }

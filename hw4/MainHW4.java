@@ -45,7 +45,7 @@ public class MainHW4 {
 		double minError = Integer.MAX_VALUE;
 		
 		for (int k = 1; k < 31; k++) {
-			   for (int p = 1; p < 4; p++) {
+			   for (int p = 1; p < 5; p++) {
 				   for (int func = 1; func < 3; func++) {
 					   double currentParamsError = kNearestNeighbor.CrossValidationError(trainingData, k, p, func);
 
