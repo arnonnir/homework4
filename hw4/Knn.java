@@ -13,6 +13,7 @@ public class Knn extends Classifier {
     private final static int NUM_FOLDS = 10;
     private String M_MODE = "";
     Instances m_trainingInstances;
+    public double m_totalAvgElapsedTime;
 
     public String getM_MODE() {
         return M_MODE;
@@ -40,20 +41,23 @@ public class Knn extends Classifier {
         }
     }
 
-    // add random shuffle
     public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
-     //   Random random = new Random();
-      //  trainingData.randomize(random);
+        Random random = new Random();
+        trainingData.randomize(random);
         double crossValidationError = 0;
+        long elapsedTImeToCalcError = 0;
 
         for (int n = 0; n < NUM_FOLDS; n++) {
             Instances testingSet = trainingData.testCV(NUM_FOLDS, n);
             Instances trainingSet = trainingData.trainCV(NUM_FOLDS, n);
+            long start = System.nanoTime();
             double specificFoldError = calcAvgError(testingSet, trainingSet, numOfNeighbors, pDistance, func);
-
+            long finish = System.nanoTime();
+            elapsedTImeToCalcError += finish - start;
             crossValidationError += specificFoldError;
         }
 
+        m_totalAvgElapsedTime = elapsedTImeToCalcError / (double) NUM_FOLDS;
         crossValidationError /= (double) NUM_FOLDS;
 
         return crossValidationError;
