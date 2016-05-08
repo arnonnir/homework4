@@ -1,5 +1,6 @@
 package hw4;
 
+// this class was created to store all params under one object
 public class configurationParams {
     int k;
     int p;

@@ -2,6 +2,7 @@ package hw4;
 
 import weka.core.Instance;
 
+// this class created to store pairs of instance and distance
 public class Pair {
     public Instance instance;
     public double distance;

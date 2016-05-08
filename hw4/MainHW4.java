@@ -26,13 +26,18 @@ public class MainHW4 {
 		String glassFile = "glass";
 		String cancerFile = "cancer";
 
+		// find best params for glass.txt
 		configurationParams bestParamsForGlass = run(glassFile);
-		run(cancerFile);
+		
+		// find best params for cancer.txt
+		configurationParams bestParamsForCancer = run(cancerFile);
 
 		Instances instancesTraining = initialize("glass");
 		Knn kNearestNeighbor = new Knn();
+		// set the best params we find earlier
 		kNearestNeighbor.setConfigParams(bestParamsForGlass.k, bestParamsForGlass.p, bestParamsForGlass.function);
 		
+		// run 3 times, for all modes
 		for (int i = 0; i < 3; i++) {
 			if (i == 0) {
 				kNearestNeighbor.setM_MODE("none");
@@ -57,12 +62,12 @@ public class MainHW4 {
 		if (fileName.equals("glass")) {
 			instancesTraining.deleteAttributeAt(0);
 		}
-
 		
-
 		return instancesTraining;
 	}
 
+	// this method runs with all combinations of params and calculate the cross validation for each.
+	// returns the best configuration of params
 	private static configurationParams run(String fileName) throws Exception{
 		Instances instancesTraining = initialize(fileName);
 		Knn kNearestNeighbor = new Knn();
