@@ -12,8 +12,9 @@ public class Knn extends Classifier {
 
     private final static int NUM_FOLDS = 10;
     private String M_MODE = "";
+    private configurationParams m_bestParams;
     Instances m_trainingInstances;
-    public double m_totalAvgElapsedTime;
+    private double m_avgElapsedTime;
 
     public String getM_MODE() {
         return M_MODE;
@@ -21,6 +22,14 @@ public class Knn extends Classifier {
 
     public void setM_MODE(String m_MODE) {
         M_MODE = m_MODE;
+    }
+    
+    public double getAvgElapsedTime() {
+    	return m_avgElapsedTime;
+    }
+    
+    public void setConfigParams(int k, int p, int func) {
+    	this.m_bestParams = new configurationParams(k, p, func);
     }
 
 
@@ -41,34 +50,36 @@ public class Knn extends Classifier {
         }
     }
 
-    public double CrossValidationError(Instances trainingData, int numOfNeighbors, int pDistance, int func) {
+    public double CrossValidationError(Instances trainingData) {
         Random random = new Random();
         trainingData.randomize(random);
         double crossValidationError = 0;
         long elapsedTImeToCalcError = 0;
 
-        for (int n = 0; n < NUM_FOLDS; n++) {
-            Instances testingSet = trainingData.testCV(NUM_FOLDS, n);
-            Instances trainingSet = trainingData.trainCV(NUM_FOLDS, n);
+        int numOfInstances = trainingData.numInstances();
+        int numOfFolds = (numOfInstances < NUM_FOLDS) ? numOfInstances : NUM_FOLDS;
+        for (int n = 0; n < numOfFolds; n++) {
+            Instances testingSet = trainingData.testCV(numOfFolds, n);
+            Instances trainingSet = trainingData.trainCV(numOfFolds, n);
             long start = System.nanoTime();
-            double specificFoldError = calcAvgError(testingSet, trainingSet, numOfNeighbors, pDistance, func);
+            double specificFoldError = calcAvgError(testingSet, trainingSet);
             long finish = System.nanoTime();
             elapsedTImeToCalcError += finish - start;
             crossValidationError += specificFoldError;
         }
 
-        m_totalAvgElapsedTime = elapsedTImeToCalcError / (double) NUM_FOLDS;
-        crossValidationError /= (double) NUM_FOLDS;
+        m_avgElapsedTime = elapsedTImeToCalcError / (double) numOfFolds;
+        crossValidationError /= (double) numOfFolds;
 
         return crossValidationError;
     }
 
-    public double calcAvgError(Instances testingData, Instances trainingData, int numOfNeighbors, int pDistance, int func) {
+    public double calcAvgError(Instances testingData, Instances trainingData) {
         int numOfFoldInstances = testingData.numInstances();
         double totalFoldError = 0;
 
         for (int i = 0; i < numOfFoldInstances; i++) {
-            double predictedValue = classify(trainingData, testingData.instance(i), numOfNeighbors, pDistance, func);
+            double predictedValue = classify(trainingData, testingData.instance(i));
             totalFoldError += (predictedValue != testingData.instance(i).classValue()) ? 1 : 0;
         }
 
@@ -77,27 +88,26 @@ public class Knn extends Classifier {
         return avgFoldError;
     }
 
-    private double classify(Instances trainingSet, Instance instance, int numOfNeighbors, int pDistance, int func) {
-        ArrayList<Pair> nearestNeighbors = findNearestNeighbors(trainingSet, instance, numOfNeighbors, pDistance);
-        double classVote = (func == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
+    private double classify(Instances trainingSet, Instance instance) {
+        ArrayList<Pair> nearestNeighbors = findNearestNeighbors(trainingSet, instance);
+        double classVote = (m_bestParams.function == 1) ? getClassVoteResult(nearestNeighbors) : getWeightedClassVoteResult(nearestNeighbors);
 
         return classVote;
     }
 
-
-    private ArrayList<Pair> findNearestNeighbors(Instances trainingData, Instance instanceToCheck, int numOfNeighbors, int pDistance) {
+    private ArrayList<Pair> findNearestNeighbors(Instances trainingData, Instance instanceToCheck) {
         ArrayList<Pair> allNeighbors = new ArrayList<Pair>();
         ArrayList<Pair> nearestNeighbors = new ArrayList<Pair>();
         int numOfInstances = trainingData.numInstances();
 
         for (int i = 0; i < numOfInstances; i++) {
             Instance currentInstance = trainingData.instance(i);
-            double currentDistance = distance(currentInstance, instanceToCheck, pDistance);
+            double currentDistance = distance(currentInstance, instanceToCheck);
 
             allNeighbors.add(new Pair(currentInstance, currentDistance));
         }
 
-        for (int i = 0; i < numOfNeighbors; i++) {
+        for (int i = 0; i < this.m_bestParams.k; i++) {
             Pair lowestNeighbor = getLowestDistanceNeighbor(allNeighbors);
             nearestNeighbors.add(new Pair(lowestNeighbor.instance, lowestNeighbor.distance));
             allNeighbors.remove(lowestNeighbor);
@@ -119,13 +129,13 @@ public class Knn extends Classifier {
         return lowestNeighbor;
     }
 
-    private double distance(Instance instance1, Instance instance2, int pDistance) {
+    private double distance(Instance instance1, Instance instance2) {
         double distance = 0;
 
-        if (pDistance == 4) {
+        if (this.m_bestParams.function == 4) {
             distance = lInfinityDistance(instance1, instance2);
         } else {
-            distance = lPDistance(instance1, instance2, pDistance);
+            distance = lPDistance(instance1, instance2, this.m_bestParams.function);
         }
 
         return distance;
@@ -181,9 +191,41 @@ public class Knn extends Classifier {
     }
 
     private void editedForward(Instances instances) {
+    	int numOfInstances = instances.numInstances();
+    	this.m_trainingInstances = new Instances(instances, numOfInstances);
+
+		for (int i = 0; i < numOfInstances; i++) {
+			Instance currentInstance = instances.instance(i);
+			double classValue = currentInstance.classValue();
+
+			if (i < this.m_bestParams.k) { 
+				m_trainingInstances.add(currentInstance);
+			} else {
+				double predictedValue = classify(m_trainingInstances, currentInstance);
+				if (classValue != predictedValue) {
+					m_trainingInstances.add(currentInstance);
+				}
+			}
+		}
     }
 
     private void editedBackward(Instances instances) {
+    	int numOfInstances = instances.numInstances();
+    	m_trainingInstances = new Instances(instances);
+
+		for (int i = 0; i < numOfInstances; i++) {
+			Instance currentInstance = instances.instance(i);
+			// create list of all instances exclude the instance we check
+			Instances instancesExcludeCurrent = new Instances(m_trainingInstances);
+			instancesExcludeCurrent.delete(i - (numOfInstances - m_trainingInstances.numInstances()));
+			
+			double classValue = currentInstance.classValue();
+			double predictedValue = classify(instancesExcludeCurrent, currentInstance);
+			if (classValue == predictedValue) {
+				// delete from training data the instance in case that he classified currectly
+				m_trainingInstances.delete(i - (numOfInstances - m_trainingInstances.numInstances()));;
+			}
+		}
     }
 
     private void noEdit(Instances instances) {
